@@ -66,5 +66,52 @@ def plot_finnish_parties(transformed_data: pd.DataFrame, splot: pyplot.subplot =
         {"parties": ["KOK", "SFP"], "country": "fin", "color": "b"},
         {"parties": ["PS"], "country": "fin", "color": "k"},
     ]
-    ##### YOUR CODE GOES HERE #####
-    pass
+    
+    if splot is None:
+        splot = pyplot.subplot()
+    
+    # Get the column names for the 2D coordinates
+    columns = transformed_data.columns
+    
+    for group in finnish_parties:
+        parties = group["parties"]
+        color = group["color"]
+        
+        # Filter data for Finnish parties in this group
+        # Check if the data has multi-level index or single level
+        if isinstance(transformed_data.index, pd.MultiIndex):
+            # Multi-level index case
+            if 'country' in transformed_data.index.names and 'party' in transformed_data.index.names:
+                mask = (transformed_data.index.get_level_values('country') == 'fin') & \
+                       (transformed_data.index.get_level_values('party').isin(parties))
+            else:
+                # Try to find parties by party name only
+                party_level = None
+                for level_name in transformed_data.index.names:
+                    if 'party' in level_name.lower():
+                        party_level = level_name
+                        break
+                if party_level:
+                    mask = transformed_data.index.get_level_values(party_level).isin(parties)
+                else:
+                    continue
+        else:
+            # Single level index - assume it contains party names
+            mask = transformed_data.index.isin(parties)
+        
+        party_data = transformed_data[mask]
+        
+        if not party_data.empty:
+            splot.scatter(
+                party_data.iloc[:, 0],  # First component
+                party_data.iloc[:, 1],  # Second component
+                c=color,
+                s=50,
+                label=f"Finnish parties: {', '.join(parties)}",
+                alpha=0.7
+            )
+    
+    splot.set_xlabel("1st Component")
+    splot.set_ylabel("2nd Component")
+    splot.legend()
+    splot.set_aspect("equal", "box")
